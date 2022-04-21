@@ -4,16 +4,26 @@
         "es2020": true
     },
     "extends": [
-        "airbnb-base"
+        "airbnb-base",
+        "airbnb-typescript/base"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 11,
-        "sourceType": "module"
+        "project": "./tsconfig.json"
     },
     "plugins": [
         "@typescript-eslint"
     ],
+    "settings": {
+        "import/resolver": {
+            "node": {
+            "extensions": [".js", ".jsx", ".ts", ".tsx"]
+            }
+        }
+    },
     "rules": {
+        "max-len":  ["error", { "code": 140 }],
+        "import/prefer-default-export": "off", //TODO remove
+        "class-methods-use-this": "off"
     }
 }
