@@ -1,13 +1,13 @@
-import * as cdk from '@aws-cdk/core';
-import * as dynamodb from '@aws-cdk/aws-dynamodb';
-import { RemovalPolicy } from '@aws-cdk/core';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import { RemovalPolicy } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 
 export const DONATIONS_TABLE = 'DonationsTable';
 
-export default class DonationsTable extends cdk.Construct {
+export default class DonationsTable extends Construct {
   public readonly table: dynamodb.Table;
 
-  constructor(scope: cdk.Construct, id: string) {
+  constructor(scope: Construct, id: string) {
     super(scope, id);
 
     this.table = new dynamodb.Table(this, DONATIONS_TABLE, {
