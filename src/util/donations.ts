@@ -6,13 +6,22 @@ export const hasMoreThan2Donations = (donationItem: IDonationsItem) => donationI
 
 export const validateDonationInput = (donationInput: DonationInput) => {
   if (!donationInput.amount || !donationInput.user) {
-    throw new BadRequestError('Some parameters are missing');
+    throw new BadRequestError({
+      status: 400,
+      message: 'Missing parameters',
+    });
   }
   if (!validateEmail(donationInput.user)) {
-    throw new BadRequestError('Invalid Email');
+    throw new BadRequestError({
+      status: 400,
+      message: 'Invalid email.',
+    });
   }
   if (donationInput.amount < 1) {
-    throw new BadRequestError('Invalid Amount');
+    throw new BadRequestError({
+      status: 400,
+      message: 'Donation amount cannot be less than 1',
+    });
   }
   return donationInput;
 };
