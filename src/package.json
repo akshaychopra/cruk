@@ -1,0 +1,22 @@
+{
+  "name": "cruk-task",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node .",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "author": "akshay",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1119.0",
+    "express": "^4.17.3",
+    "moment": "^2.29.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13"
+  }
+}
