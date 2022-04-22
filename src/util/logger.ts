@@ -1,7 +1,7 @@
 /// <reference path="../index.d.ts" />
 
 import { Request, RequestHandler, Response } from 'express';
-import * as winston from 'winston';
+import winston from 'winston';
 import Sentry from 'winston-sentry-log';
 import morgan, { Options } from 'morgan';
 import moment from 'moment';

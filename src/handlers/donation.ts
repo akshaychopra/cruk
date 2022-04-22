@@ -1,6 +1,6 @@
-import * as AWS from 'aws-sdk';
+import AWS from 'aws-sdk';
 import { Request, Response } from 'express';
-import * as moment from 'moment';
+import moment from 'moment';
 import { DonationInput, IDonationsItem } from '../interfaces/donations';
 import { hasMoreThan2Donations, validateDonationInput } from '../util/donations';
 import { sendThankYouEmail } from '../util/email';
