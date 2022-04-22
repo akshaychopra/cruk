@@ -1,8 +1,9 @@
-import * as express from 'express';
+import express from 'express';
+import dotenv from 'dotenv';
 import donation from './routes/donation';
 
 const app = express();
-
+dotenv.config();
 const port = 80;
 
 app.use(express.urlencoded({ extended: false }));
