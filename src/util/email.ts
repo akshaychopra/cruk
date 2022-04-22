@@ -10,8 +10,8 @@ export const validateEmail = (email:string) => !!email.match(
 )?.length;
 
 export const sendThankYouEmail = async (donationItem: IDonationsItem) => {
-  if (!process.env.fromEmail || !donationItem) {
-    // TODO log error;
+  if (!process.env.FROM_EMAIL || !donationItem) {
+    global.logger.error({ message: 'Could not send thank you email as parameters are missing' });
     return;
   }
   const emailParams = {
@@ -27,12 +27,12 @@ export const sendThankYouEmail = async (donationItem: IDonationsItem) => {
       },
       Subject: { Data: 'Your donation is helping others' },
     },
-    Source: process.env.fromEmail as String,
+    Source: process.env.FROM_EMAIL as String,
   };
 
   try {
     await ses.sendEmail(emailParams).promise();
-  } catch (err) {
-    // TODO log silent error
+  } catch (err:any) {
+    global.logger.error({ message: `error sending thank you email. ${err.message}` });
   }
 };
