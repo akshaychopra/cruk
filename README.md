@@ -2,7 +2,7 @@
 
 ### Stack
 
-The stack consists of a Fargate service with autoscaling and ALB (application load balancer) capabilities which exposes an APIGateway that's run on ECS. Lambdas were considered but not chosen for this task due to their concurrenct execution limts (1000-99999), runtime limit of 900 seconds, memory limits and are generally more costly as the api scales up. 
+The stack consists of a Fargate service with autoscaling and ALB (application load balancer) capabilities which exposes an APIGateway that's run on ECS using Nodejs and express. Lambdas were considered but not chosen for this task due to their concurrenct execution limts (1000-99999), runtime limit of 900 seconds, memory limits and are generally more costly as the api scales up. 
 
 ## Requirements
 
