@@ -9,21 +9,24 @@ import ErrorResponse from '../util/error';
 export class DonationHandler {
   donate = async (req: Request, res: Response) => {
     try {
+      AWS.config.update({ region: process.env.REGION });
       const documentClient = new AWS.DynamoDB.DocumentClient();
       const { user, amount } = validateDonationInput(req.body as DonationInput);
       const params = {
-        TableName: 'DonationsTable',
+        TableName: process.env.DONATIONS_TABLE as string,
         Key: { id: user },
-        Item: {
-          UpdateExpression: 'SET donations = list_append(donations, :donation)',
-          ExpressionAttributeValues: { ':donation': [{ amount, donatedAt: moment().format() }] },
-          ReturnValues: 'ALL_NEW',
+        UpdateExpression: 'SET donations = list_append(if_not_exists(donations, :empty_list),:vals)',
+        ExpressionAttributeValues: {
+          ':vals': [{ amount, createdAt: moment().format() }],
+          ':empty_list': [],
         },
       };
       const donationItem = (await documentClient.update(params).promise()).Attributes as IDonationsItem;
+
       if (hasMoreThan2Donations(donationItem)) {
         await sendThankYouEmail(donationItem);
       }
+
       return res.json(donationItem);
     } catch (err) {
       return ErrorResponse(err, res);
