@@ -1,11 +1,10 @@
 /* eslint-disable no-new */
 import path = require('path');
-import { AnyPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import {
   CfnOutput, CfnResource, Duration, Stack, StackProps,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { GatewayVpcEndpointAwsService, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { Vpc } from 'aws-cdk-lib/aws-ec2';
 import {
   Cluster, ContainerImage, AwsLogDriver, FargateTaskDefinition,
 } from 'aws-cdk-lib/aws-ecs';
@@ -19,6 +18,7 @@ export default class RecruitmentNodejsTestStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    const donationsTable = new DonationsTable(this, DONATIONS_TABLE).table;
     const vpc = new Vpc(this, 'RecruitmentNodejsTestVPC', { maxAzs: cpuConfig.MAX_AZS });
     const cluster = new Cluster(this, 'Cluster', { vpc });
 
@@ -29,6 +29,10 @@ export default class RecruitmentNodejsTestStack extends Stack {
       memoryLimitMiB: cpuConfig.MAX_CPU_RAM,
       taskImageOptions: {
         image: ContainerImage.fromAsset(path.join(__dirname, '../src/')),
+        environment: {
+          DONATIONS_TABLE: donationsTable.tableName,
+          REGION: process.env.CDK_DEFAULT_REGION!,
+        },
       },
     });
 
@@ -55,30 +59,6 @@ export default class RecruitmentNodejsTestStack extends Stack {
       image: ContainerImage.fromAsset(path.join(__dirname, '../src/')),
       logging,
     });
-
-    const donationsTable = new DonationsTable(this, DONATIONS_TABLE).table;
-    const dynamoGatewayEndpoint = vpc.addGatewayEndpoint('dynamoGatewayEndpoint', {
-      service: GatewayVpcEndpointAwsService.DYNAMODB,
-    });
-
-    // Allow PutItem action from the Fargate Task Definition only
-    dynamoGatewayEndpoint.addToPolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        principals: [new AnyPrincipal()],
-        actions: [
-          'dynamodb:PutItem',
-        ],
-        resources: [
-          `${donationsTable.tableArn}`,
-        ],
-        conditions: {
-          ArnEquals: {
-            'aws:PrincipalArn': `${fargateService.taskDefinition.taskRole.roleArn}`,
-          },
-        },
-      }),
-    );
 
     // Write permissions for Fargate
     donationsTable.grantWriteData(fargateService.taskDefinition.taskRole);
