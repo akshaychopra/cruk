@@ -1,72 +1,113 @@
 # CRUK Node.js Recruitment Assignment
 
-### Functional Requirements
+### Stack
 
-Build a service in Node.js that can be deployed to AWS which exposes an API and can be consumed from any client. 
+The stack consists of a Fargate service with autoscaling and ALB (application load balancer) capabilities which exposes an APIGateway that's run on ECS. Lambdas were considered but not chosen for this task due to their concurrenct execution limts (1000-99999), runtime limit of 900 seconds, memory limits and are generally more costly as the api scales up. 
 
-This service should check how many donations a user has made and send them a special thank you message (e.g. via SNS) if they make 2 or more donations. 
+## Requirements
 
-### Output Package Requirements
+- [Create an AWS account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html) if you do not already have one and log in. The IAM user that you use must have sufficient permissions to make necessary AWS service calls and manage AWS resources.
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured
+- [Git Installed](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [AWS CDK](https://docs.aws.amazon.com/cdk/latest/guide/cli.html) installed and configured
+- SES will need to be manually set on the console and the FROM email needs to be changed in the env file
 
-The solution has to be provided as a Github repository including full commit history.
+## Deployment Instructions
 
-Please follow the frequent commit practice so that your local repository indicates reasonable milestones of your implementation.
+1. Create a new directory, navigate to that directory in a terminal and clone the GitHub repository:
+   ```bash
+   git clone git@github.com:akshaychopra/cruk.git
+   ```
+2. Change directory to the pattern directory:
+   ```bash
+   cd cruk
+   ```
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. From the command line, configure AWS CDK:
+   ```bash
+   cdk bootstrap ACCOUNT-NUMBER/REGION # e.g.
+   cdk bootstrap 1111111111/us-east-1
+   cdk bootstrap --profile test 1111111111/us-east-1
+   ```
+6. From the command line, use AWS CDK to deploy the AWS resources for the pattern as specified in the `lib/cdk-stack.ts` file:
+   ```bash
+   cdk deploy
+   ```
+7. Note the outputs from the CDK deployment process. This contains the apigw endpoint that is used to make the GET/POST request
 
-The repository MUST contain:
+## How it works
 
-- Source code
-    - It should be buildable/viewable.
-    - In case you need to use external libraries, please add them.
-- Infrastructure as Code (We love the AWS CDK, but feel free to use Cloudformation, Terraform or Pulumi if you feel more comfortable with these technologies).
-- Any installation and deployment instructions for apps and components.
-- README file with URL for testing the service online and a brief explanation on the scalability strategy.
+- The image is constructed directly from sources on disk when `cdk deploy` is executed
+- The image is automatically pushed to Amazon ECR
+- The VPC and subnets are created
+- The ECS cluster is created
+- The Task Definitions are created
+- The API Gateway Integration, Route, and VPC Link are created
+- The Fargate Service is created
+- Dynamo tables are created
+- Logger task is created
+- Elasticsearch server and kibana can be accessed at https://www.elastic.co/. Please ask for access if needed
 
-### Rules
+## Testing
 
-If you do not complete the test please indicate how you would intend to finalise it in the README. You can use any library or tool you feel comfortable with.
+To run automated tests locally
+```bash
+   npm run test && cd src && npm run test
+```
 
-The team is looking to see how you approach a problem with a broad spec which could have a number of different solutions and then explaining your approach? Keep the implementation simple, but make sure you have automated tests, logging (structured logs with JSON), and include information in the README about how you'll scale the solution to thousands of users, how you'd approach logging & monitoring at scale so that you can actually debug the system as it increases in complexity.
+An already deployed api can be accessed at at https://nyqjdn8czl.execute-api.eu-west-2.amazonaws.com/. Please don't stress test it as it is hosted and paid by myself xD
 
-We are not expecting the solution to be deployed, but we expect you to understand the process and best practices around the deployment process. It’s enough if you could provide to our engineers clear and easy instructions on how to deploy your application.
+To test the API using cURL, Retrieve the API Gateway URL from the `cdk deploy` output or use the link above. 
 
-### FAQ's
 
-*Any client - what are the clients?*
+The API Gateway allows a GET request to `/` and POST to `/donate`. To call it, run the following:
 
-A client is a consumer of the API (e.g. web app, another backend service, a mobile app, etc). In this case "Any client" means for us, the API can and should be implemented independently of who/what is going to consume it.
+```bash
+curl --location --request GET '<REPLACE WITH API GATEWAY URL>'
 
-*Does this sit behind an API Gateway?*
+# Example
+curl --location --request GET 'https://nyqjdn8czl.execute-api.eu-west-2.amazonaws.com/'
 
-Whilst this is not strictly required, it’s just one of various solutions on AWS for exposing your API
+# Post example
+curl --location --request POST 'https://nyqjdn8czl.execute-api.eu-west-2.amazonaws.com/donate' \
+--header 'Content-Type: application/json' \
+--data-raw '{"user":"ak.chopra24@gmail.com","amount":"300"}'
+```
 
-*How is authentication performed?*
+## Cleanup
 
-We are not looking at the implementation of the authentication in the code challenge.
+1. Delete the stack
+   ```bash
+   cdk destroy
+   ```
 
-*Will the API receives a token in the header (JWT with authentication service defined)?*
+# TypeScript Express server without Docker
 
-Not necessarily, as per the answer above the authentication is not required for this task.
+Run the following to start the server on port 80:
 
-*Will only certain roles be able to call the API (eg, AWS IAM Permissions with AWS API Gateway)?*
+```bash
+cd src
+npm install
+npm run start
+```
 
-Again, no authorisation or permissions are expected to be set for the coding challenge. We can discuss these things during the F2F interview.
+# TypeScript Express server with Docker
+Have docker running and then run the following to start the server on port 80:
 
-*Will I need to persist donations data in a database?*
+```bash
+cd src
+docker build . -t ts-express
+docker rm ts-app && docker run -p 80:80 --name ts-app ts-express
+```
 
-Most candidates have used an in-memory store which saves them time to provision and deploy machines/databases. If you want to use a specific data store we don’t have any objection.
+# Monitoring and logging
+All custom logs, access logs, requests, responses are registered om cloudwatch. Dashboards can be created to filter data and alarms can be created for critical inspections. Alarms can be created whenever application load gets too high or we add new CPUs
 
-*Is there a standardised/preferred method of logging?*
-
-We don’t expect the coding challenge to be production-ready and ship logs anywhere but having basic error handling is considered a minimum requirement. You will definitely get extra points if you handle and log successfully edge-cases and critical paths (e.g. fatal errors).
-
-*In terms of deploying to AWS, should I include a build pipeline or can that be done manually?*
-
-Do it manually, it's a one-time thing
-
-*Can we implement this using AWS Lambda?*
-
-Absolutely! show us your AWS chops
-
+A much better monitoring solution than cloudwatch is a managed server at https://www.elastic.co/ with Kibana integrated. Please ask for access if required.
+<img src="./docs/kibana.png" alt="example-request" width="90%"/>
 
 ## Useful commands
 
@@ -76,3 +117,13 @@ Absolutely! show us your AWS chops
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk synth`       emits the synthesized CloudFormation template
+
+
+# Future changes
+- Automate SES using cdk (if possible)
+- Implement env management such as Ansible. (.env files should never be committed. I have only added one for illustration)
+- More elaborate testing, including and not limited to
+   - mock and test email service
+   - test each cdk policy
+   - stress/load testing for scability and load balancing tests
+
